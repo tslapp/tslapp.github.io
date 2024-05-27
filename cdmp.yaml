@@ -1,0 +1,379 @@
+openapi: 3.0.3
+info:
+  title: CDMP Open API Documentation
+  version: "1.1.0"
+servers:
+  - url: https://cdmp-test.ttvcl.com
+    description: CDMP testing environment
+tags:
+  - name: Auth
+    description: Authentication APIs
+  - name: Project
+    description: Project APIs
+  - name: Device
+    description: Device APIs
+  - name: Alert
+    description: Alert APIs
+paths:
+  /auth/v1/token:
+    post:
+      description: Create a bearer token by username and password
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully to create bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /project/v1/projects:
+    get:
+      security:
+        - bearerAuth: []
+      description: Get associated projects for current user
+      tags:
+        - Project
+      responses:
+        '200':
+          description: Successfully to get projects for current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+  /device/v1/devicetypes:
+    get:
+      description: Get device types for project
+      tags:
+        - Device
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: x-project
+          in: header
+          description: Project identity
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully to get device types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeviceType'
+  /device/v1/devices:
+    get:
+      description: Get devices by device type and project
+      tags:
+        - Device
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: x-project
+          in: header
+          description: Project identity
+          required: true
+          schema:
+            type: string
+        - name: typeName
+          in: query
+          description: Device type Name, if it's empty, will return all devices
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully to get devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+  /device/v1/devices/{deviceId}/histories:
+    get:
+      description: Get device histories for specific device
+      tags:
+        - Device
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: x-project
+          in: header
+          description: Project identity
+          required: true
+          schema:
+            type: string
+        - name: deviceId
+          in: path
+          description: Device identity
+          required: true
+          schema:
+            type: string
+        - name: startTime
+          in: query
+          description: Query start time
+          required: true
+          schema:
+            type: string
+            format: date-time
+            description: ISO 8601 date string
+        - name: endTime
+          in: query
+          description: Query end time
+          required: true
+          schema:
+            type: string
+            format: date-time
+            description: ISO 8601 date string
+      responses:
+        '200':
+          description: Successfully to get device histories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeviceHistory'
+  /alert/v1/alertTypes:
+    get:
+      description: Get alert types
+      tags:
+        - Alert
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: x-project
+          in: header
+          description: Project identity
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully to get alert types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertType'
+  /alert/v1/alerts:
+    get:
+      description: Get alert records
+      tags:
+        - Alert
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: x-project
+          in: header
+          description: Project identity
+          required: true
+          schema:
+            type: string
+        - name: showAll
+          in: query
+          description: Show all alerts or non-respond only, default is false
+          required: false
+          schema:
+            type: string
+            enum:
+              - true
+              - false
+        - name: level
+          in: query
+          description: Alert level
+          required: false
+          schema:
+            type: string
+            enum:
+              - info
+              - critical
+        - name: sourceId
+          in: query
+          description: Alert source identity
+          required: false
+          schema:
+            type: string
+        - name: sourceType
+          in: query
+          description: Alert source type name
+          required: false
+          schema:
+            type: string
+        - name: startTime
+          in: query
+          description: Query start time
+          required: false
+          schema:
+            type: string
+            format: date-time
+            description: ISO 8601 date string
+        - name: endTime
+          in: query
+          description: Query end time
+          required: false
+          schema:
+            type: string
+            format: date-time
+            description: ISO 8601 date string
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: number
+            default: 1
+        - name: size
+          in: query
+          description: Page size
+          schema:
+            type: number
+            default: 10
+      responses:
+        '200':
+          description: Successfully to get alert records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertPage'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Bearer Token
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Project identity
+        name:
+          type: string
+          description: Project name
+    DeviceType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Device type identity
+        name:
+          type: string
+          description: Device type name
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Device identity
+        name:
+          type: string
+          description: Device name
+        type:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Device type name
+        attributes:
+          type: object
+          description: Key-value pairs to present latest device attribute values
+    DeviceHistory:
+      type: object
+      properties:
+        time:
+          type: string
+        additionalProperties:
+          oneOf:
+            - type: string
+            - type: number
+          description: Name-value pairs for device attributes in the time point
+    AlertType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Alert type identity
+        name:
+          type: string
+          description: Alert type name
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Alert identity
+        type:
+          $ref: '#/components/schemas/AlertType'
+        level:
+          type: string
+          description: Alert level
+          enum:
+            - info
+            - critical
+        description:
+          type: string
+          description: Alert description
+        sourceId:
+          type: string
+          description: Alert source identity, currently it's a device identity
+        sourceName:
+          type: string
+          description: Alert source name, currently it's a device name
+        sourceType:
+          type: string
+          description: Alert source type, currently it's a device type name
+        createTime:
+          type: string
+          format: date-time
+          description: Alert creation time, ISO 8601 date string
+    AlertPage:
+      type: object
+      properties:
+        total:
+          type: number
+          description: Total count
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+
+
+
+
